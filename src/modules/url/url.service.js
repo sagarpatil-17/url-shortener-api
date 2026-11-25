@@ -1,22 +1,24 @@
-
 import { nanoid } from "nanoid";
 import Url from "./url.model.js";
 import ApiError from "../../utils/ApiError.js";
 import { env } from "../../config/env.js";
 
-const generateShortCode = () => {
-    return nanoid(8);
-};
+const generateShortCode = () => nanoid(8);
+
+const formatUrlResponse = (url) => ({
+    id: url._id,
+    originalUrl: url.originalUrl,
+    shortCode: url.shortCode,
+    shortUrl: `${env.BASE_URL}/${url.shortCode}`,
+    clicks: url.clicks,
+    expiresAt: url.expiresAt,
+    createdAt: url.createdAt,
+});
 
 const createShortUrl = async ({
     originalUrl,
-    customAlias,
     expiresAt,
 }) => {
-    // Generate a unique short code
-    const shortCode = customAlias || generateShortCode();
-
-    // Validate expiration date
     if (expiresAt && new Date(expiresAt) <= new Date()) {
         throw new ApiError(
             400,
@@ -24,82 +26,57 @@ const createShortUrl = async ({
         );
     }
 
-    // Create URL document
-    try {
-        const url = await Url.create({
-            originalUrl,
-            shortCode,
-            expiresAt: expiresAt || null,
-        });
+    const MAX_RETRIES = 5;
 
-        return {
-            id: url._id,
-            originalUrl: url.originalUrl,
-            shortCode: url.shortCode,
-            shortUrl: `${env.BASE_URL}/${url.shortCode}`,
-            expiresAt: url.expiresAt,
-            createdAt: url.createdAt,
-        };
-    } catch (error) {
-        // Handle duplicate custom aliases or generated codes
-        if (error.code === 11000) {
-            throw new ApiError(
-                409,
-                "This short URL code is already taken"
-            );
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const url = await Url.create({
+                originalUrl,
+                shortCode: generateShortCode(),
+                expiresAt: expiresAt || null,
+            });
+
+            return formatUrlResponse(url);
+
+        } catch (error) {
+            if (error.code === 11000 && attempt < MAX_RETRIES) {
+                continue;
+            }
+
+            if (error.code === 11000) {
+                throw new ApiError(
+                    503,
+                    "Unable to generate a unique short URL. Please try again."
+                );
+            }
+
+            throw error;
         }
-
-        throw error;
     }
 };
 
 const redirectToOriginalUrl = async (shortCode) => {
-    const now = new Date();
-
-    // Find an active URL that has not expired.
-    // Increment clicks atomically.
     const url = await Url.findOneAndUpdate(
         {
             shortCode,
             isActive: true,
-            $or: [
-                { expiresAt: null },
-                { expiresAt: { $gt: now } },
-            ],
         },
         {
             $inc: { clicks: 1 },
         },
         {
             new: true,
-            projection: { originalUrl: 1, shortCode: 1 },
+            projection: {
+                originalUrl: 1,
+            },
         }
     );
 
-    if (url) {
-        return url.originalUrl;
+    if (!url) {
+        throw new ApiError(404, "Short URL not found or disabled");
     }
 
-    // Determine why the URL could not be redirected.
-    const existingUrl = await Url.findOne({ shortCode })
-        .select("isActive expiresAt");
-
-    if (!existingUrl) {
-        throw new ApiError(404, "Short URL not found");
-    }
-
-    if (!existingUrl.isActive) {
-        throw new ApiError(410, "This short URL is disabled");
-    }
-
-    if (
-        existingUrl.expiresAt &&
-        existingUrl.expiresAt <= now
-    ) {
-        throw new ApiError(410, "This short URL has expired");
-    }
-
-    throw new ApiError(404, "Short URL not available");
+    return url.originalUrl;
 };
 
 export { createShortUrl, redirectToOriginalUrl };

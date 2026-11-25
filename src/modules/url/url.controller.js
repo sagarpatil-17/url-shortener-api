@@ -1,14 +1,13 @@
 
 import asyncHandler from "../../utils/asyncHandler.js";
-import { createShortUrl } from "./url.service.js";
+import { createShortUrl, redirectToOriginalUrl } from "./url.service.js";
 
 const createUrl = asyncHandler(
     async (req, res) => {
-        const { originalUrl, customAlias, expiresAt } = req.body;
+        const { originalUrl, expiresAt } = req.body;
 
         const result = await createShortUrl({
             originalUrl,
-            customAlias,
             expiresAt,
         });
 

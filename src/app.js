@@ -4,6 +4,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import urlRoutes from './modules/url/url.routes.js';
 import errorMiddleware from './middlewares/error.middleware.js';
+import { redirectUrl } from './modules/url/url.controller.js';
 
 const app = express();
 
@@ -19,7 +20,11 @@ app.use(cors({
 app.use(morgan("dev"));
 
 // parse incoming json 
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({
+    limit: "10kb",
+    strict: true,
+    type: ["application/json", "application/*+json"],
+}));
 
 // parse url-encoded data 
 app.use(express.urlencoded({ extended: true }));
@@ -35,6 +40,9 @@ app.get('/health', (req, res) => {
 
 // routes 
 app.use("/api/v1/urls", urlRoutes);
+
+// Public short URL redirect
+app.get("/:shortCode", redirectUrl);
 
 // global error middleware
 app.use(errorMiddleware)
