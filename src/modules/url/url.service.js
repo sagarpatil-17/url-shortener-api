@@ -26,6 +26,16 @@ const createShortUrl = async ({
         );
     }
 
+    // Check whether the original URL already exists
+    const existingUrl = await Url.findOne({
+        originalUrl,
+        isActive: true,
+    });
+
+    if (existingUrl) {
+        return formatUrlResponse(existingUrl);
+    }
+
     const MAX_RETRIES = 5;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {

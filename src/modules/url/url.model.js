@@ -35,6 +35,9 @@ const urlSchema = new mongoose.Schema(
 // Index for listing recently created active URLs
 urlSchema.index({ isActive: 1, createdAt: -1 });
 
+// Index for original URL lookup
+urlSchema.index({ originalUrl: 1 });
+
 const Url = mongoose.model("Url", urlSchema);
 
 export default Url;

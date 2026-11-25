@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import urlRoutes from './modules/url/url.routes.js';
 import errorMiddleware from './middlewares/error.middleware.js';
 import { redirectUrl } from './modules/url/url.controller.js';
+import analyticsRoutes from './modules/analytics/analytics.routes.js';
+import { redirectLimiter } from './middlewares/rate-limit.middleware.js';
 
 const app = express();
 
@@ -40,9 +42,10 @@ app.get('/health', (req, res) => {
 
 // routes 
 app.use("/api/v1/urls", urlRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
 
 // Public short URL redirect
-app.get("/:shortCode", redirectUrl);
+app.get("/:shortCode", redirectLimiter, redirectUrl);
 
 // global error middleware
 app.use(errorMiddleware)
