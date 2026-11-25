@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import urlRoutes from './modules/url/url.routes.js';
 
 const app = express();
 
@@ -30,5 +31,8 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 })
+
+// routes 
+app.use("/api/v1/urls", urlRoutes);
 
 export default app;
