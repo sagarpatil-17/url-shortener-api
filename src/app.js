@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import urlRoutes from './modules/url/url.routes.js';
+import errorMiddleware from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -34,5 +35,8 @@ app.get('/health', (req, res) => {
 
 // routes 
 app.use("/api/v1/urls", urlRoutes);
+
+// global error middleware
+app.use(errorMiddleware)
 
 export default app;
