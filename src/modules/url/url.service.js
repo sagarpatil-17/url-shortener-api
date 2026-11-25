@@ -8,7 +8,7 @@ const generateShortCode = () => {
     return nanoid(8);
 };
 
-export const createShortUrl = async ({
+const createShortUrl = async ({
     originalUrl,
     customAlias,
     expiresAt,
@@ -52,3 +52,54 @@ export const createShortUrl = async ({
         throw error;
     }
 };
+
+const redirectToOriginalUrl = async (shortCode) => {
+    const now = new Date();
+
+    // Find an active URL that has not expired.
+    // Increment clicks atomically.
+    const url = await Url.findOneAndUpdate(
+        {
+            shortCode,
+            isActive: true,
+            $or: [
+                { expiresAt: null },
+                { expiresAt: { $gt: now } },
+            ],
+        },
+        {
+            $inc: { clicks: 1 },
+        },
+        {
+            new: true,
+            projection: { originalUrl: 1, shortCode: 1 },
+        }
+    );
+
+    if (url) {
+        return url.originalUrl;
+    }
+
+    // Determine why the URL could not be redirected.
+    const existingUrl = await Url.findOne({ shortCode })
+        .select("isActive expiresAt");
+
+    if (!existingUrl) {
+        throw new ApiError(404, "Short URL not found");
+    }
+
+    if (!existingUrl.isActive) {
+        throw new ApiError(410, "This short URL is disabled");
+    }
+
+    if (
+        existingUrl.expiresAt &&
+        existingUrl.expiresAt <= now
+    ) {
+        throw new ApiError(410, "This short URL has expired");
+    }
+
+    throw new ApiError(404, "Short URL not available");
+};
+
+export { createShortUrl, redirectToOriginalUrl };

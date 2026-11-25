@@ -2,7 +2,7 @@
 import asyncHandler from "../../utils/asyncHandler.js";
 import { createShortUrl } from "./url.service.js";
 
-export const createUrl = asyncHandler(
+const createUrl = asyncHandler(
     async (req, res) => {
         const { originalUrl, customAlias, expiresAt } = req.body;
 
@@ -19,3 +19,17 @@ export const createUrl = asyncHandler(
         });
     }
 );
+
+const redirectUrl = asyncHandler(
+    async (req, res) => {
+        const { shortCode } = req.params;
+
+        const originalUrl = await redirectToOriginalUrl(
+            shortCode
+        );
+
+        res.redirect(302, originalUrl);
+    }
+);
+
+export { createUrl, redirectUrl };
