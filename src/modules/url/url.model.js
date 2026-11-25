@@ -2,19 +2,19 @@ import mongoose from "mongoose";
 
 const urlSchema = new mongoose.Schema(
     {
-        original_url: {
+        originalUrl: {
             type: String,
             required: [true, "Original url is required"],
             trim: true,
-            maxlength: 2048,
+            maxLength: 2048,
         },
-        short_code: {
+        shortCode: {
             type: String,
             required: true,
             unique: true,
             trim: true,
             minlength: 4,
-            maxlength: 20,
+            maxLength: 20,
         },
         clicks: {
             type: Number,
