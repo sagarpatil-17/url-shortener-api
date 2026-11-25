@@ -9,7 +9,9 @@ const app = express();
 app.use(helmet())
 
 // cors configuration 
-app.use(cors())
+app.use(cors({
+    origin: '*'
+}))
 
 // request logging 
 app.use(morgan("dev"));
