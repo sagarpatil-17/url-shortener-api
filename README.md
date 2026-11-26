@@ -83,7 +83,7 @@ Make sure you have installed:
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/sagarpatil-17/url-shortener-api.git
 ```
 
 Navigate into the project:
